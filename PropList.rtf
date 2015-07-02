@@ -1,0 +1,734 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1347\cocoasubrtf570
+{\fonttbl\f0\fnil\fcharset0 Menlo-Regular;}
+{\colortbl;\red255\green255\blue255;\red0\green116\blue0;\red170\green13\blue145;\red92\green38\blue153;
+\red63\green110\blue116;\red196\green26\blue22;\red46\green13\blue110;\red28\green0\blue207;\red38\green71\blue75;
+}
+\paperw11900\paperh16840\margl1440\margr1440\vieww28300\viewh15780\viewkind0
+\deftab529
+\pard\tx529\pardeftab529\pardirnatural
+
+\f0\fs22 \cf2 \CocoaLigature0 //\
+//  PropertyListingController.swift\
+//  TabletPLUS\
+//\
+//  Created by dhaval shah on 21/05/15.\
+//  Copyright (c) 2015 dhaval shah. All rights reserved.\
+//\
+\pard\tx529\pardeftab529\pardirnatural
+\cf0 \
+\cf3 import\cf0  UIKit\
+\cf3 import\cf0  Foundation\
+\cf3 import\cf0  QuartzCore\
+\cf3 import\cf0  MapKit\
+\
+\
+\cf3 class\cf0  PropertyListingController: \cf4 UIViewController\cf0 , \cf4 NSURLConnectionDataDelegate\cf0 ,\cf4 UITableViewDataSource\cf0 , \cf4 UITableViewDelegate\cf0 , \cf4 MKMapViewDelegate\cf0 ,\cf4 UIPopoverPresentationControllerDelegate\cf0  ,\cf5 MyProtocol\cf0   \{\
+    \
+    \cf3 @IBOutlet\cf0  \cf3 var\cf0  uiPendingView: \cf4 UIView\cf0 !\
+    \cf3 @IBOutlet\cf0  \cf3 var\cf0  uiDraftView: \cf4 UIView\cf0 !\
+    \cf3 @IBOutlet\cf0  \cf3 var\cf0  propertyListingTableView: \cf4 UITableView\cf0 !\
+    \cf3 @IBOutlet\cf0  \cf3 var\cf0  uiCompletedView: \cf4 UIView\cf0 !\
+    \cf3 @IBOutlet\cf0  \cf3 var\cf0  propertiesMap: \cf4 MKMapView\cf0 !\
+    \cf3 @IBOutlet\cf0  \cf3 var\cf0  btnSynch: \cf4 UIButton\cf0 !\
+    \cf3 @IBOutlet\cf0  \cf3 var\cf0  lblPendingStatus: \cf4 UILabel\cf0 !\
+    \cf3 @IBOutlet\cf0  \cf3 var\cf0  lblDraftStatus: \cf4 UILabel\cf0 !\
+    \cf3 @IBOutlet\cf0  \cf3 var\cf0  lblCompleteStatus: \cf4 UILabel\cf0 !\
+    \cf3 @IBOutlet\cf0  \cf3 var\cf0  networkLabel: \cf4 UILabel\cf0 !\
+    \cf3 @IBOutlet\cf0  \cf3 var\cf0  tableEmtyLabel: \cf4 UILabel\cf0 !\
+    \
+    \cf3 var\cf0  annotation = \cf5 CustomPointAnnotation\cf0 ()\
+    \cf3 var\cf0  annotationArray : [\cf5 CustomPointAnnotation\cf0 ] = [\cf5 CustomPointAnnotation\cf0 ]()\
+    \cf3 var\cf0  properties:[\cf5 Property\cf0 ] = [\cf5 Property\cf0 ]()\
+    \cf3 var\cf0  property = \cf5 Property\cf0 ()\
+    \cf3 var\cf0  allProperties:[\cf5 Property\cf0 ] = [\cf5 Property\cf0 ]()\
+    \cf3 var\cf0  xmlElementData : \cf4 NSData\cf0 !\
+    \cf3 var\cf0  filePath:\cf4 NSString\cf0 ?\
+    \cf3 var\cf0  xmlParseString: \cf4 NSString\cf0  = \cf6 ""\cf0 \
+    \cf3 var\cf0  xmlNSData: \cf4 NSData\cf0  = \cf4 NSData\cf0 ()\
+    \
+    \cf3 var\cf0  pendingFilterTick = \cf3 false\cf0 \
+    \cf3 var\cf0  draftFilterTick = \cf3 false\cf0 \
+    \cf3 var\cf0  compeletdFilterTick = \cf3 false\cf0 \
+    \cf3 var\cf0  fromPopover = \cf3 false\cf0 \
+    \
+    \cf3 var\cf0  sortingImg   : \cf4 UIImage\cf0  = \cf4 UIImage\cf0 (named: \cf6 "Sorting"\cf0 )!\
+    \cf3 var\cf0  menuImg : \cf4 UIImage\cf0  = \cf4 UIImage\cf0 (named: \cf6 "Slider"\cf0 )!\
+    \cf3 var\cf0  sortingBtn : \cf4 UIBarButtonItem\cf0  = \cf4 UIBarButtonItem\cf0 ()\
+    \cf3 var\cf0  menuBtn : \cf4 UIBarButtonItem\cf0  = \cf4 UIBarButtonItem\cf0 ()\
+    \cf3 var\cf0  emptyView: \cf4 UIView\cf0 !\
+    \cf3 var\cf0  actInd: \cf4 UIActivityIndicatorView\cf0  = \cf4 UIActivityIndicatorView\cf0 ()\
+    \cf3 var\cf0  container: \cf4 UIView\cf0  = \cf4 UIView\cf0 ()\
+\
+    \cf3 let\cf0  nsFileManager = \cf4 NSFileManager\cf0 .\cf7 defaultManager\cf0 ()\
+    \cf3 var\cf0  constants = \cf5 Constants\cf0 ()\
+    \cf3 var\cf0  parser = \cf4 NSXMLParser\cf0 ()\
+    \cf3 var\cf0  utility = \cf5 Utility\cf0 ()\
+    \cf3 var\cf0  fileMgr = \cf5 FileManagement\cf0 ()\
+    \cf3 var\cf0  xmlParser = \cf5 XMLParser\cf0 ()\
+    \cf3 var\cf0  netUtil = \cf5 NetworkUtil\cf0 ()\
+    \cf3 let\cf0  appDelegate = \cf4 UIApplication\cf0 .\cf7 sharedApplication\cf0 ().\cf4 delegate\cf0  \cf3 as\cf0 ? \cf5 AppDelegate\cf0 \
+    \cf3 var\cf0  lblProcess: \cf4 UILabel\cf0 !\
+    \cf3 var\cf0  unitCount = \cf8 0\cf0 \
+    \
+    \cf3 override\cf0  \cf3 func\cf0  viewDidAppear(animated: \cf4 Bool\cf0 ) \{\
+        \cf3 super\cf0 .\cf7 viewDidAppear\cf0 (animated)\
+        \cf7 println\cf0 (\cf6 "rot >> \cf0 \\\cf6 (\cf5 fileMgr\cf0 .\cf9 getRootPath\cf0 ()\cf6 )"\cf0 )\
+        \cf3 var\cf0  isFileExist =  \cf4 NSFileManager\cf0 .\cf7 defaultManager\cf0 ().\cf7 fileExistsAtPath\cf0 ((\cf5 fileMgr\cf0 .\cf9 getRootPath\cf0 () \cf3 as\cf0 ! \cf4 String\cf0 ) +  \cf5 fileMgr\cf0 .\cf9 getSurveyourPropListXmlName\cf0 (\cf6 ""\cf0 ))\
+        \
+        \
+        \cf3 if\cf0  isFileExist\
+        \{\
+            \cf3 var\cf0  str = \cf5 fileMgr\cf0 .\cf9 readFileContent\cf0 (\cf5 fileMgr\cf0 .\cf9 getSurveyourPropListXmlName\cf0 (\cf6 ""\cf0 ))\
+            \cf5 xmlNSData\cf0  = str.\cf7 dataUsingEncoding\cf0 (\cf4 NSUTF8StringEncoding\cf0 )!\
+        \}\
+        \cf9 beginParsing\cf0 ()\
+        \cf9 resetStatusLabels\cf0 ()\
+        \cf3 self\cf0 .\cf5 propertyListingTableView\cf0 .\cf7 reloadData\cf0 ()\
+    \}\
+  \
+    \cf3 override\cf0  \cf3 func\cf0  viewDidLoad()\
+    \{\
+        \cf3 super\cf0 .\cf7 viewDidLoad\cf0 ()\
+      \
+        \cf9 navigationHandling\cf0 ()\
+        \cf9 showActivityIndicator\cf0 (\cf3 self\cf0 .\cf4 view\cf0 ,message: \cf6 ""\cf0 )\
+        \cf5 propertyListingTableView\cf0 .\cf4 layer\cf0 .\cf4 masksToBounds\cf0  = \cf3 true\cf0 \
+        \cf5 propertyListingTableView\cf0 .\cf4 layer\cf0 .\cf4 borderColor\cf0  = \cf4 UIColor\cf0 ( red: \cf8 153\cf0 /\cf8 255\cf0 , green: \cf8 153\cf0 /\cf8 255\cf0 , blue:\cf8 0\cf0 /\cf8 255\cf0 , alpha: \cf8 1.0\cf0  ).\cf4 CGColor\cf0 \
+        \cf5 propertyListingTableView\cf0 .\cf4 layer\cf0 .\cf4 borderWidth\cf0  = \cf8 0.5\cf0 \
+        \
+        \cf9 sideMenuInit\cf0 ()\
+        \
+        \cf2 //render property list here...\
+\cf0         \cf3 var\cf0  isFileExist =  \cf4 NSFileManager\cf0 .\cf7 defaultManager\cf0 ().\cf7 fileExistsAtPath\cf0 ((\cf5 fileMgr\cf0 .\cf9 getRootPath\cf0 () \cf3 as\cf0 ! \cf4 String\cf0 ) +  \cf5 fileMgr\cf0 .\cf9 getSurveyourPropListXmlName\cf0 (\cf6 ""\cf0 ))\
+		\
+        \
+        \cf3 if\cf0  isFileExist\
+        \{\
+            \cf3 var\cf0  str = \cf5 fileMgr\cf0 .\cf9 readFileContent\cf0 (\cf5 fileMgr\cf0 .\cf9 getSurveyourPropListXmlName\cf0 (\cf6 ""\cf0 ))\
+            \cf5 xmlNSData\cf0  = str.\cf7 dataUsingEncoding\cf0 (\cf4 NSUTF8StringEncoding\cf0 )!\
+        \}\
+       \
+        \cf3 var\cf0  str = \cf5 fileMgr\cf0 .\cf9 readFileContent\cf0 (\cf5 fileMgr\cf0 .\cf9 getSurveyourPropListXmlName\cf0 (\cf6 ""\cf0 ))\
+        \cf5 xmlNSData\cf0  = str.\cf7 dataUsingEncoding\cf0 (\cf4 NSUTF8StringEncoding\cf0 )!\
+        \
+        \cf2 //Code for Pendind View filter\
+\cf0         \cf3 let\cf0  pendingFilter = \cf4 UITapGestureRecognizer\cf0 (target: \cf3 self\cf0 , action: \cf6 "pendingWork:"\cf0 )\
+        \cf3 self\cf0 .\cf5 uiPendingView\cf0 .\cf7 addGestureRecognizer\cf0 (pendingFilter)\
+        \
+        \
+        \cf2 //Code for Draft View filter\
+\cf0         \cf3 let\cf0  draftFilter = \cf4 UITapGestureRecognizer\cf0 (target: \cf3 self\cf0 , action: \cf6 "draftWork:"\cf0 )\
+        \cf3 self\cf0 .\cf5 uiDraftView\cf0 .\cf7 addGestureRecognizer\cf0 (draftFilter)\
+        \
+        \
+        \cf2 //Code for Pendind View filter\
+\cf0         \cf3 let\cf0  completedFilter = \cf4 UITapGestureRecognizer\cf0 (target: \cf3 self\cf0 , action: \cf6 "completedWork:"\cf0 )\
+        \cf3 self\cf0 .\cf5 uiCompletedView\cf0 .\cf7 addGestureRecognizer\cf0 (completedFilter)\
+        \
+        \
+        \cf5 btnSynch\cf0 .\cf4 layer\cf0 .\cf4 cornerRadius\cf0  = \cf8 5\cf0 \
+        \cf5 btnSynch\cf0 .\cf4 layer\cf0 .\cf4 borderWidth\cf0  = \cf8 1\cf0 \
+        \cf5 btnSynch\cf0 .\cf4 layer\cf0 .\cf4 borderColor\cf0  = \cf4 UIColor\cf0 .\cf7 whiteColor\cf0 ().\cf4 CGColor\cf0 \
+        \
+        \
+        \cf2 /*round border to status*/\cf0 \
+        \
+        \cf5 lblPendingStatus\cf0 .\cf4 layer\cf0 .\cf4 cornerRadius\cf0  = \cf8 3.0\cf0 ;\
+        \cf5 lblPendingStatus\cf0 .\cf4 layer\cf0 .\cf4 masksToBounds\cf0  = \cf3 true\cf0 \
+        \cf5 uiPendingView\cf0 .\cf7 addSubview\cf0 (\cf5 lblPendingStatus\cf0 )\
+        \
+        \cf5 lblDraftStatus\cf0 .\cf4 layer\cf0 .\cf4 cornerRadius\cf0  = \cf8 3.0\cf0 ;\
+        \cf5 lblDraftStatus\cf0 .\cf4 layer\cf0 .\cf4 masksToBounds\cf0  = \cf3 true\cf0 \
+        \cf5 uiDraftView\cf0 .\cf7 addSubview\cf0 (\cf5 lblDraftStatus\cf0 )\
+        \
+        \cf5 lblCompleteStatus\cf0 .\cf4 layer\cf0 .\cf4 cornerRadius\cf0  = \cf8 3.0\cf0 ;\
+        \cf5 lblCompleteStatus\cf0 .\cf4 layer\cf0 .\cf4 masksToBounds\cf0  = \cf3 true\cf0 \
+        \cf5 uiCompletedView\cf0 .\cf7 addSubview\cf0 (\cf5 lblCompleteStatus\cf0 )\
+        \
+        \cf9 beginParsing\cf0 ()\
+       \cf3 if\cf0  \cf5 netUtil\cf0 .\cf9 isConnectedToNetwork\cf0 () == \cf3 false\cf0 \
+        \{\
+           \cf5 networkLabel\cf0 .\cf4 hidden\cf0  = \cf3 false\cf0 \
+           \cf5 networkLabel\cf0 .\cf4 text\cf0  = \cf6 "Connect internet to see map with the properties..."\cf0 \
+           \cf5 networkLabel\cf0 .\cf4 layer\cf0 .\cf4 cornerRadius\cf0  = \cf8 20\cf0 \
+           \cf5 networkLabel\cf0 .\cf4 clipsToBounds\cf0  = \cf3 true\cf0 \
+        \}\
+        \cf3 else\cf0 \
+        \{\
+            \cf9 loadPropertyMap\cf0 ()\
+        \}\
+        \
+        \cf9 resetStatusLabels\cf0 ()\
+       \
+      \cf9 hideActivityIndicator\cf0 ()\
+        \
+    \}\
+    \
+    \cf3 func\cf0  navigationHandling()\
+    \{\
+        \cf3 if\cf0  \cf3 self\cf0 .\cf4 navigationController\cf0  != \cf3 nil\cf0  \{\
+            \cf3 self\cf0 .\cf4 navigationController\cf0 ?.\cf4 navigationBar\cf0 .\cf4 tintColor\cf0  = \cf5 utility\cf0 .\cf9 uicolorFromHex\cf0 (\cf8 0x70B420\cf0 )\
+            \cf3 self\cf0 .\cf4 navigationController\cf0 ?.\cf4 navigationBar\cf0 .\cf4 barTintColor\cf0  = \cf5 utility\cf0 .\cf9 uicolorFromHex\cf0 (\cf8 0x70B420\cf0 )\
+            \cf3 self\cf0 .\cf4 navigationController\cf0 ?.\cf4 navigationBarHidden\cf0  = \cf3 false\cf0 \
+            \cf3 self\cf0 .\cf4 navigationItem\cf0 .\cf4 hidesBackButton\cf0  = \cf3 true\cf0 \
+           \
+        \}\
+        \cf5 sortingBtn\cf0  = \cf4 UIBarButtonItem\cf0 (image: \cf5 sortingImg\cf0 ,  style: \cf4 UIBarButtonItemStyle\cf0 .\cf7 Done\cf0 , target: \cf3 self\cf0 , action: \cf4 Selector\cf0 (\cf6 "sortingPressed:"\cf0 ))\
+        \
+        \cf5 menuBtn\cf0  = \cf4 UIBarButtonItem\cf0 (image: \cf5 menuImg\cf0 ,  style: \cf4 UIBarButtonItemStyle\cf0 .\cf7 Plain\cf0 , target: \cf3 self\cf0 , action : \cf3 nil\cf0 )\
+        \cf5 sortingBtn\cf0 .\cf4 tintColor\cf0  = \cf4 UIColor\cf0 .\cf7 whiteColor\cf0 ()\
+        \cf5 menuBtn\cf0 .\cf4 tintColor\cf0  = \cf4 UIColor\cf0 .\cf7 whiteColor\cf0 ()\
+        \cf3 var\cf0  buttons : \cf4 NSArray\cf0  = [\cf5 menuBtn\cf0 ,\cf5 sortingBtn\cf0 ]\
+        \cf3 self\cf0 .\cf4 navigationItem\cf0 .\cf4 rightBarButtonItems\cf0  = buttons \cf3 as\cf0  [\cf4 AnyObject\cf0 ]\
+        \cf3 self\cf0 .\cf4 navigationItem\cf0 .\cf7 setRightBarButtonItems\cf0 ([\cf5 menuBtn\cf0 ,\cf5 sortingBtn\cf0 ], animated: \cf3 true\cf0 )\
+        \cf5 networkLabel\cf0 .\cf4 hidden\cf0  = \cf3 true\cf0 \
+       \
+    \}\
+    \
+    \cf3 func\cf0  defineActivityLbl(message: \cf4 String\cf0 ) ->\cf4 UILabel\cf0 \
+    \{\
+        \cf5 lblProcess\cf0 .\cf4 text\cf0  = message\
+        \cf5 lblProcess\cf0 .\cf4 tintColor\cf0  = \cf4 UIColor\cf0 .\cf7 whiteColor\cf0 ()\
+        \cf5 lblProcess\cf0 .\cf4 textColor\cf0  = \cf4 UIColor\cf0 .\cf7 whiteColor\cf0 ()\
+        \cf3 return\cf0  \cf5 lblProcess\cf0 \
+    \}\
+    \
+    \cf3 func\cf0  showActivityIndicator(uiView: \cf4 UIView\cf0 ,message: \cf4 String\cf0 ) \{\
+      \
+        \cf5 container\cf0 .\cf7 removeFromSuperview\cf0 ()\
+        \cf5 container\cf0 .\cf4 frame\cf0  = uiView.\cf4 frame\cf0 \
+        \cf5 container\cf0 .\cf4 center\cf0  = uiView.\cf4 center\cf0 \
+        \cf5 container\cf0 .\cf4 backgroundColor\cf0  = \cf9 UIColorFromHex\cf0 (\cf8 0xffffff\cf0 , alpha: \cf8 0.1\cf0 )\
+        \
+        \cf3 var\cf0  loadingView: \cf4 UIView\cf0  = \cf4 UIView\cf0 ()\
+        loadingView.\cf4 frame\cf0  = \cf7 CGRectMake\cf0 (\cf8 0\cf0 , \cf8 0\cf0 , \cf3 self\cf0 .\cf4 view\cf0 .\cf4 frame\cf0 .\cf4 width\cf0 , \cf3 self\cf0 .\cf4 view\cf0 .\cf4 frame\cf0 .\cf4 height\cf0 )\
+        loadingView.\cf4 center\cf0  = uiView.\cf4 center\cf0 \
+        loadingView.\cf4 backgroundColor\cf0  = \cf9 UIColorFromHex\cf0 (\cf8 0x444444\cf0 , alpha: \cf8 0.3\cf0 )\
+        loadingView.\cf4 clipsToBounds\cf0  = \cf3 true\cf0 \
+        loadingView.\cf4 layer\cf0 .\cf4 cornerRadius\cf0  = \cf8 10\cf0 \
+        \
+        \cf3 var\cf0  imageData = \cf4 NSData\cf0 (contentsOfURL: \cf4 NSBundle\cf0 .\cf7 mainBundle\cf0 ()\
+            .\cf7 URLForResource\cf0 (\cf6 "synch-loader"\cf0 , withExtension: \cf6 "gif"\cf0 )!)\
+        \cf3 let\cf0  try = \cf4 UIImage\cf0 .\cf9 animatedImageWithData\cf0 (imageData!)\
+        \cf3 var\cf0  imageView = \cf4 UIImageView\cf0 (image: try)\
+        \
+        imageView.\cf4 center\cf0  = uiView.\cf4 center\cf0 \
+        imageView.\cf4 frame\cf0  = \cf4 CGRect\cf0 (x: uiView.\cf4 frame\cf0 .\cf4 width\cf0 /\cf8 4\cf0 , y: uiView.\cf4 frame\cf0 .\cf4 height\cf0 /\cf8 2\cf0 , width: \cf8 500\cf0 , height: \cf8 15\cf0 )\
+        \
+        loadingView.\cf7 addSubview\cf0 (imageView)\
+        \
+        \cf3 let\cf0  screenSize: \cf4 CGRect\cf0  = \cf4 UIScreen\cf0 .\cf7 mainScreen\cf0 ().\cf4 bounds\cf0 \
+        \cf5 lblProcess\cf0  = \cf4 UILabel\cf0 (frame: \cf7 CGRectMake\cf0 (\cf8 0\cf0 ,\cf8 0\cf0 ,\cf8 200\cf0 ,\cf8 200\cf0 ))\
+        \cf5 lblProcess\cf0  = \cf9 defineActivityLbl\cf0 (message)\
+        \cf5 lblProcess\cf0 .\cf4 center\cf0  = \cf4 CGPoint\cf0  (x: (screenSize.\cf4 width\cf0 /\cf8 2\cf0 )-\cf8 140\cf0  , y: (screenSize.\cf4 height\cf0 /\cf8 1.9\cf0 )+\cf8 5\cf0   )\
+        \
+        \cf5 container\cf0 .\cf7 addSubview\cf0 (loadingView)\
+        \cf5 container\cf0 .\cf7 addSubview\cf0 (\cf5 lblProcess\cf0 )\
+        \
+        \cf5 actInd\cf0 .\cf7 startAnimating\cf0 ()\
+        \
+        \cf3 let\cf0  window = \cf5 appDelegate\cf0 ?.\cf5 window\cf0 \
+        window!.\cf7 addSubview\cf0 (\cf5 container\cf0 )\
+        \
+    \}\
+    \
+    \cf3 func\cf0  hideActivityIndicator()\
+    \{\
+        \cf5 actInd\cf0 .\cf4 hidden\cf0  = \cf3 true\cf0 \
+        \cf5 container\cf0 .\cf7 removeFromSuperview\cf0 ()\
+        \cf3 let\cf0  window = \cf5 appDelegate\cf0 ?.\cf5 window\cf0 \
+        window!.\cf7 removeFromSuperview\cf0 ()\
+    \}\
+    \
+    \cf3 func\cf0  resetStatusLabels()\
+    \{\
+        \cf3 var\cf0  pendingCnt = \cf8 0\cf0 \
+        \cf3 var\cf0  draftCnt = \cf8 0\cf0 \
+        \cf3 var\cf0  completedCnt = \cf8 0\cf0 \
+        \
+        \cf3 for\cf0  propertyObj: \cf5 Property\cf0  \cf3 in\cf0  \cf5 properties\cf0 \
+        \{\
+            \cf3 if\cf0  propertyObj.\cf5 status\cf0  == \cf5 constants\cf0 .\cf5 status\cf0 .\cf5 STATUS_PENDING_XML\cf0 \
+            \{\
+                pendingCnt++\
+            \}\
+            \cf3 else\cf0  \cf3 if\cf0  propertyObj.\cf5 status\cf0  == \cf5 constants\cf0 .\cf5 status\cf0 .\cf5 STATUS_DRAFT_XML\cf0 \
+            \{\
+                draftCnt++\
+            \}\
+            \cf3 else\cf0  \cf3 if\cf0  propertyObj.\cf5 status\cf0  == \cf5 constants\cf0 .\cf5 status\cf0 .\cf5 STATUS_COMPLETED_XML\cf0 \
+            \{\
+                completedCnt++\
+            \}\
+        \}\
+        \
+        \cf5 lblPendingStatus\cf0 .\cf4 text\cf0  = \cf4 String\cf0 (pendingCnt)\
+        \cf5 lblDraftStatus\cf0 .\cf4 text\cf0  = \cf4 String\cf0 (draftCnt)\
+        \cf5 lblCompleteStatus\cf0 .\cf4 text\cf0  = \cf4 String\cf0 (completedCnt)\
+    \}\
+    \
+    \cf3 func\cf0  sideMenuInit()\
+    \{\
+        \cf3 if\cf0  \cf3 self\cf0 .\cf9 revealViewController\cf0 () != \cf3 nil\cf0  \{\
+            \cf5 menuBtn\cf0 .\cf4 target\cf0  = \cf3 self\cf0 .\cf9 revealViewController\cf0 ()\
+            \cf5 menuBtn\cf0 .\cf4 action\cf0  = \cf6 "rightRevealToggle:"\cf0 \
+            \cf3 self\cf0 .\cf4 view\cf0 .\cf7 addGestureRecognizer\cf0 (\cf3 self\cf0 .\cf9 revealViewController\cf0 ().\cf9 panGestureRecognizer\cf0 ())\
+            \cf3 self\cf0 .\cf9 revealViewController\cf0 ().\cf5 rightViewRevealWidth\cf0  = \cf8 270\cf0 \
+        \}\
+        \
+    \}\
+    \
+    \cf3 func\cf0  resetMessage(message: \cf4 String\cf0 )\
+    \{\
+        \cf3 for\cf0  view \cf3 in\cf0  \cf3 self\cf0 .\cf4 view\cf0 .\cf4 subviews\cf0 \
+        \{\
+            \cf3 if\cf0  view \cf3 is\cf0  \cf4 UILabel\cf0 \
+            \{\
+                view.removeFromSuperview()\
+            \}\
+        \}\
+        \cf3 self\cf0 .\cf5 lblProcess\cf0 .\cf7 removeFromSuperview\cf0 ()\
+        \cf3 self\cf0 .\cf5 lblProcess\cf0 .\cf4 text\cf0  = message\
+        \cf3 self\cf0 .\cf5 container\cf0 .\cf7 addSubview\cf0 (\cf3 self\cf0 .\cf5 lblProcess\cf0 )\
+    \}\
+    \
+    \cf3 @IBAction\cf0  \cf3 func\cf0  callSynchMethod(sender: \cf4 AnyObject\cf0 ) \{\
+        \
+      \
+        \cf3 if\cf0  \cf5 netUtil\cf0 .\cf9 isConnectedToNetwork\cf0 () == \cf3 true\cf0 \
+        \{\
+            \cf3 self\cf0 .\cf9 showActivityIndicator\cf0 (\cf3 self\cf0 .\cf4 view\cf0 ,message: \cf6 "Synch is progress..."\cf0 )\
+            \
+                \cf2 //Logic toc all Web Service\
+\cf0                 \cf3 var\cf0  urlStr: \cf4 String\cf0  = \cf6 "\cf0 \\\cf6 (\cf5 constants\cf0 .\cf5 SERVER_URL\cf6 )"\cf0 \
+                \cf7 println\cf0 (\cf6 "Before Block method"\cf0 )\
+                \cf3 self\cf0 .\cf5 netUtil\cf0 .\cf9 callWebservice\cf0 (urlStr) \{(data) -> \cf4 Void\cf0  \cf3 in\cf0 \
+                \
+                \cf3 self\cf0 .\cf5 fileMgr\cf0 .\cf9 createFileDirectory\cf0 (\cf6 "/Surveyor"\cf0 )\
+                \cf3 self\cf0 .\cf5 filePath\cf0  = \cf3 self\cf0 .\cf5 fileMgr\cf0 .\cf9 createFile\cf0 (\cf3 self\cf0 .\cf5 fileMgr\cf0 .\cf9 getSurveyourPropListXmlName\cf0 (\cf6 ""\cf0 ))\
+                \
+                \cf3 self\cf0 .\cf5 fileMgr\cf0 .\cf9 writeFile\cf0 (data, filenamePath: \cf3 self\cf0 .\cf5 fileMgr\cf0 .\cf9 getSurveyourPropListXmlName\cf0 (\cf6 ""\cf0 ))\
+                \cf3 self\cf0 .\cf5 xmlNSData\cf0  = data.\cf7 dataUsingEncoding\cf0 (\cf4 NSUTF8StringEncoding\cf0 )!\
+                \
+                \cf3 self\cf0 .\cf9 beginParsing\cf0 ()\
+                \cf3 self\cf0 .\cf9 loadPropertyMap\cf0 ()\
+                \cf3 var\cf0  unitCount = \cf8 0\cf0 \
+                    \
+                     \cf3 self\cf0 .\cf5 unitCount\cf0  = \cf8 0\cf0 \
+                    \cf3 for\cf0  Prop: \cf5 Property\cf0  \cf3 in\cf0  \cf3 self\cf0 .\cf5 properties\cf0 \
+                    \{\
+                        \
+                      \
+                        \
+\pard\tx529\pardeftab529\pardirnatural
+\cf2 //                        for view in self.view.subviews\
+//                        \{\
+//                            if view is UILabel\
+//                            \{\
+//                                view.removeFromSuperview()\
+//                            \}\
+//                        \}\
+//                       \
+\pard\tx529\pardeftab529\pardirnatural
+\cf0                         \cf2 /* refresh label code start here */\cf0 \
+                        \cf7 dispatch_async\cf0 (\cf7 dispatch_get_main_queue\cf0 (), \{\
+                            \cf2 //Run UI Updates\
+\cf0                             \cf3 self\cf0 .\cf5 unitCount\cf0 ++\
+                            \cf7 println\cf0 (\cf6 "unitCount \cf0 \\\cf6 (\cf0  \cf3 self\cf0 .\cf5 unitCount\cf6 )"\cf0 )\
+                            \cf3 var\cf0  totCount = \cf3 self\cf0 .\cf5 properties\cf0 .\cf4 count\cf0 \
+                            \cf3 var\cf0  message = \cf6 "Synchronization \cf0 \\\cf6 (\cf3 self\cf0 .\cf5 unitCount\cf6 )/\cf0 \\\cf6 (\cf0 totCount\cf6 ) buildings completed"\cf0 \
+                            \cf3 self\cf0 .\cf5 lblProcess\cf0 .\cf4 text\cf0  = message\
+                         \cf2 //   self.lblProcess.setNeedsDisplay()\
+\cf0                            \
+                        \})\
+                         \cf2 /* refresh label code End here */\cf0 \
+                        \
+                        \cf2 //Backup code to be shfted while pushing in web service\
+\cf0                         \cf3 self\cf0 .\cf5 fileMgr\cf0 .\cf9 getSurveyorUnitFiles\cf0 (\cf6 ""\cf0 , proCode: Prop.\cf5 proCode\cf0  \cf3 as\cf0  \cf4 String\cf0 , isCreateBackup: \cf3 true\cf0 )\
+                        \
+                        \cf2 //back up code ended\
+\cf0                         \cf3 self\cf0 .\cf9 callUnitsWebservice\cf0 (Prop.\cf5 proCode\cf0  \cf3 as\cf0  \cf4 String\cf0 ,unitCount:unitCount)  \cf2 //another web service cal\
+\cf0                         \
+                    \}\
+                 \
+                 \
+                \cf3 self\cf0 .\cf5 lblProcess\cf0 .\cf7 removeFromSuperview\cf0 ()\
+                \cf3 self\cf0 .\cf9 hideActivityIndicator\cf0 ()\
+            \}\
+           \
+            \
+        \}\
+        \cf3 else\cf0 \
+        \{\
+            \cf3 var\cf0  alert = \cf4 UIAlertController\cf0 (title: \cf6 "Success"\cf0 , message: \cf6 "Please Turn Wi-Fi on"\cf0 , preferredStyle: \cf4 UIAlertControllerStyle\cf0 .\cf7 Alert\cf0 )\
+            \
+            \cf3 self\cf0 .\cf7 presentViewController\cf0 (alert, animated: \cf3 true\cf0 , completion: \cf3 nil\cf0 )\
+            \
+            \cf3 let\cf0  otherAction = \cf4 UIAlertAction\cf0 (title: \cf6 "OK"\cf0 , style: .\cf7 Default\cf0 )\{action \cf3 in\cf0 \
+                \cf2 // I know I need to put something in here.\
+\cf0                 \
+            \}\
+             alert.\cf7 addAction\cf0 (otherAction)\
+        \}\
+        \
+    \}\
+    \
+    \cf3 func\cf0  beginParsing()\
+    \{\
+        \cf3 self\cf0 .\cf5 unitCount\cf0  = \cf8 0\cf0 \
+        \cf5 properties\cf0  = \cf5 xmlParser\cf0 .\cf9 getPropertyListXml\cf0 (\cf5 xmlNSData\cf0 )\
+        \cf5 propertyListingTableView\cf0 !.\cf7 reloadData\cf0 ()\
+        \cf5 allProperties\cf0  = \cf5 properties\cf0 \
+        \cf3 self\cf0 .\cf5 tableEmtyLabel\cf0 .\cf4 text\cf0  = \cf6 "No properties assigned to you!"\cf0 \
+        \
+        \cf3 if\cf0  \cf5 properties\cf0 .\cf4 count\cf0  > \cf8 0\cf0  \{\
+           \cf3 self\cf0 .\cf5 tableEmtyLabel\cf0 .\cf4 hidden\cf0  = \cf3 true\cf0 \
+        \} \cf3 else\cf0  \{\
+           \cf3 self\cf0 .\cf5 tableEmtyLabel\cf0 .\cf4 hidden\cf0  = \cf3 false\cf0 \
+        \}\
+    \}\
+    \
+    \cf3 func\cf0  callUnitsWebservice(proCode: \cf4 String\cf0 ,\cf3 var\cf0  unitCount: \cf4 Int\cf0 )\
+    \{\
+          \cf3 var\cf0  urlStr: \cf4 String\cf0  = \cf6 "\cf0 \\\cf6 (\cf5 constants\cf0 .\cf5 SERVER_URL\cf6 )UNIT\cf0 \\\cf6 (\cf0 proCode\cf6 )"\cf0 \
+\
+        \cf2 // var totCount = self.properties.count\
+\cf0         \cf2 // var unitCount = 0\
+\cf0         \cf2 // var message = "Synchronization \\(self.unitCount)/\\(totCount) buildings completed"\
+\cf0         \cf2 // self.resetMessage(message)\
+\cf0         \
+        \cf5 netUtil\cf0 .\cf9 callWebservice\cf0 (urlStr) \{(data) -> \cf4 Void\cf0  \cf3 in\cf0 \
+           \
+                      \cf3 var\cf0  surveyorId = \cf6 ""\cf0 \
+            \cf3 var\cf0  unitXmlName = \cf6 "\cf0 \\\cf6 (\cf3 self\cf0 .\cf5 fileMgr\cf0 .\cf9 getSurveyorUnitXmlName\cf0 (surveyorId,proCode: proCode)\cf6 )"\cf0 \
+           \
+           \
+            \cf3 self\cf0 .\cf5 filePath\cf0  = \cf3 self\cf0 .\cf5 fileMgr\cf0 .\cf9 createFile\cf0 (unitXmlName)\
+            \cf3 self\cf0 .\cf5 fileMgr\cf0 .\cf9 writeFile\cf0 (data, filenamePath: unitXmlName)\
+            \cf3 self\cf0 .\cf5 xmlNSData\cf0  = data.\cf7 dataUsingEncoding\cf0 (\cf4 NSUTF8StringEncoding\cf0 )!\
+            \
+           \
+        \}\
+    \}\
+    \
+    \cf3 func\cf0  loadPropertyMap()\
+    \{\
+        \cf3 for\cf0  annotationObj: \cf5 CustomPointAnnotation\cf0  \cf3 in\cf0  \cf5 annotationArray\cf0 \
+        \{\
+            \cf3 self\cf0 .\cf5 propertiesMap\cf0 .\cf7 removeAnnotation\cf0 (annotationObj)\
+        \}\
+        \
+        \cf3 var\cf0  gecoder = \cf4 CLGeocoder\cf0 ()\
+        \
+        \cf3 var\cf0  latitude: \cf4 CLLocationDegrees\cf0 =\cf8 0.0\cf0 \
+        \cf3 var\cf0  longitude: \cf4 CLLocationDegrees\cf0 =\cf8 0.0\cf0 \
+        \
+        \
+         \cf3 var\cf0  latDelta: \cf4 CLLocationDegrees\cf0 =\cf8 0.01\cf0 \
+        \cf3 var\cf0  longDelta: \cf4 CLLocationDegrees\cf0 =\cf8 0.01\cf0 \
+        \cf3 for\cf0  Prop: \cf5 Property\cf0  \cf3 in\cf0  \cf5 properties\cf0 \
+        \{\
+            \
+            \cf3 var\cf0  latStr = Prop.\cf5 lat\cf0  \cf3 as\cf0  \cf4 NSString\cf0 \
+            \cf3 var\cf0  latDbl : \cf4 Double\cf0   = \cf4 Double\cf0 (latStr.\cf4 intValue\cf0 )\
+            latitude = latDbl\
+            \
+            \cf3 var\cf0  langStr = Prop.\cf5 lang\cf0  \cf3 as\cf0  \cf4 NSString\cf0 \
+            \cf3 var\cf0  langDbl : \cf4 Double\cf0  = \cf4 Double\cf0 (langStr.\cf4 intValue\cf0 )\
+            longitude = langDbl\
+            \
+            \cf3 let\cf0  location = \cf4 CLLocationCoordinate2D\cf0 (\
+                latitude: latitude,\
+                longitude:longitude\
+            )\
+            \
+            \cf3 let\cf0  span = \cf7 MKCoordinateSpanMake\cf0 (latDelta, longDelta)\
+            \cf3 let\cf0  region = \cf4 MKCoordinateRegion\cf0 (center: location, span: span)\
+            \cf3 self\cf0 .\cf5 propertiesMap\cf0 .\cf7 setRegion\cf0 (region, animated: \cf3 true\cf0 )\
+            \
+            \cf5 annotation\cf0  = \cf5 CustomPointAnnotation\cf0 ()\
+            \cf5 annotation\cf0 .\cf4 coordinate\cf0  = location\
+            \
+            \cf5 annotation\cf0 .\cf4 title\cf0  = Prop.\cf5 buildingName\cf0  \cf3 as\cf0  \cf4 String\cf0 \
+            \cf5 annotation\cf0 .\cf4 subtitle\cf0  = Prop.\cf5 address\cf0  \cf3 as\cf0  \cf4 String\cf0 \
+            \cf5 annotation\cf0 .\cf5 imageName\cf0  = \cf6 "map-marker-new"\cf0 \
+            \cf5 annotationArray\cf0 .\cf7 append\cf0 (\cf5 annotation\cf0 )\
+            \cf3 self\cf0 .\cf5 propertiesMap\cf0 .\cf7 addAnnotation\cf0 (\cf5 annotation\cf0 )\
+        \}\
+    \}\
+    \
+    \cf3 func\cf0  mapView(mapView: \cf4 MKMapView\cf0 !, viewForAnnotation annotation: \cf4 MKAnnotation\cf0 !) -> \cf4 MKAnnotationView\cf0 ! \{\
+        \
+        \cf3 if\cf0  !(annotation \cf3 is\cf0  \cf4 CustomPointAnnotation\cf0 ) \{\
+            \cf3 return\cf0  \cf3 nil\cf0 \
+        \}\
+        \
+        \cf3 let\cf0  reuseId = \cf6 "PropertyMap"\cf0 \
+        \
+        \cf3 var\cf0  anView = mapView.\cf7 dequeueReusableAnnotationViewWithIdentifier\cf0 (reuseId)\
+        \cf3 if\cf0  anView == \cf3 nil\cf0  \{\
+            anView = \cf4 MKAnnotationView\cf0 (annotation: annotation, reuseIdentifier: reuseId)\
+            anView.\cf4 canShowCallout\cf0  = \cf3 true\cf0 \
+        \}\
+        \cf3 else\cf0  \{\
+            anView.\cf4 annotation\cf0  = annotation\
+        \}\
+        \
+        \cf3 let\cf0  cpa = annotation \cf3 as\cf0 ! \cf5 CustomPointAnnotation\cf0 \
+        anView.\cf4 image\cf0  = \cf4 UIImage\cf0 (named:cpa.\cf5 imageName\cf0 )\
+        \
+        \cf3 return\cf0  anView\
+    \}\
+    \
+    \
+    \cf3 class\cf0  CustomPointAnnotation: \cf4 MKPointAnnotation\cf0  \{\
+        \cf3 var\cf0  imageName: \cf4 String\cf0 !\
+    \}\
+   \
+    \cf3 override\cf0  \cf3 func\cf0  didReceiveMemoryWarning()\
+    \{\
+        \cf3 super\cf0 .\cf7 didReceiveMemoryWarning\cf0 ()\
+        \cf2 // Dispose of any resources that can be recreated.\
+\cf0         \
+    \}\
+    \
+    \cf3 func\cf0  tableView(tableView:\cf4 UITableView\cf0 , numberOfRowsInSection section:\cf4 Int\cf0 ) -> \cf4 Int\cf0  \{\
+        \
+        \cf3 return\cf0   \cf3 self\cf0 .\cf5 properties\cf0 .\cf4 count\cf0 \
+    \}\
+    \
+    \cf3 func\cf0  tableView(tableView:\cf4 UITableView\cf0 , cellForRowAtIndexPath indexPath:\cf4 NSIndexPath\cf0 ) -> \cf4 UITableViewCell\cf0  \{\
+        \
+        \cf3 let\cf0  propertyCell = tableView.\cf7 dequeueReusableCellWithIdentifier\cf0 (\cf6 \'93cell\'94\cf0 ) \cf3 as\cf0 ! \cf5 PropertyCell\cf0 \
+        \cf3 let\cf0  propertyResult=\cf5 properties\cf0 [indexPath.\cf4 row\cf0 ]\
+        \cf3 var\cf0  status = propertyResult.\cf5 status\cf0  \cf3 as\cf0  \cf4 String\cf0 \
+        \cf3 var\cf0  imgStatus: \cf4 UIImage\cf0  = \cf4 UIImage\cf0 ();\
+       \cf2 // println("pro >> \\(propertyResult.proCode) >> \\(status)")\
+\cf0         \cf3 if\cf0  status != \cf6 ""\cf0 \
+        \{\
+            \cf3 if\cf0  status == \cf5 constants\cf0 .\cf5 status\cf0 .\cf5 STATUS_PENDING_XML\cf0 \
+            \{\
+                imgStatus = \cf4 UIImage\cf0 (named: \cf6 "Status_Pending"\cf0  \cf3 as\cf0  \cf4 String\cf0 !) \cf3 as\cf0  \cf4 UIImage\cf0 !\
+            \}\
+            \cf3 else\cf0  \cf3 if\cf0  status == \cf5 constants\cf0 .\cf5 status\cf0 .\cf5 STATUS_DRAFT_XML\cf0 \
+            \{\
+                imgStatus = \cf4 UIImage\cf0 (named: \cf6 "Status_Draft"\cf0  \cf3 as\cf0  \cf4 String\cf0 !) \cf3 as\cf0  \cf4 UIImage\cf0 !\
+            \}\
+            \cf3 else\cf0  \cf3 if\cf0  status == \cf5 constants\cf0 .\cf5 status\cf0 .\cf5 STATUS_COMPLETED_XML\cf0 \
+            \{\
+                imgStatus = \cf4 UIImage\cf0 (named: \cf6 "Status_Completed"\cf0  \cf3 as\cf0  \cf4 String\cf0 !) \cf3 as\cf0  \cf4 UIImage\cf0 !\
+            \}\
+            \cf3 else\cf0 \
+            \{\
+                imgStatus = \cf4 UIImage\cf0 (named: \cf6 "Status_Pending"\cf0  \cf3 as\cf0  \cf4 String\cf0 !) \cf3 as\cf0  \cf4 UIImage\cf0 !\
+            \}\
+        \}\
+        \
+        \
+        propertyCell.\cf4 layer\cf0 .\cf4 masksToBounds\cf0  = \cf3 true\cf0 \
+        propertyCell.\cf4 layer\cf0 .\cf4 borderWidth\cf0  = \cf8 0.5\cf0 \
+        propertyCell.\cf4 layer\cf0 .\cf4 borderColor\cf0  = \cf5 utility\cf0 .\cf9 uicolorFromHex\cf0 (\cf8 0x959594\cf0 ).\cf4 CGColor\cf0 ;\
+        \
+        propertyCell.\cf9 setPropertyCell\cf0 (propertyResult.\cf5 buildingName\cf0  \cf3 as\cf0  \cf4 String\cf0 , lblAddress :propertyResult.\cf5 address\cf0  \cf3 as\cf0  \cf4 String\cf0 ,\
+            lblAreaMap: propertyResult.\cf5 areaMap\cf0  \cf3 as\cf0  \cf4 String\cf0 ,imgStatus :imgStatus )\
+        \
+        \
+        propertyCell.\cf4 backgroundColor\cf0  = \cf5 utility\cf0 .\cf9 uicolorFromHex\cf0 (\cf8 0xE6E6E6\cf0 );\
+        \
+        \cf3 return\cf0  propertyCell\
+    \}\
+    \
+    \cf3 func\cf0  tableView(tableView: \cf4 UITableView\cf0 , didSelectRowAtIndexPath indexPath: \cf4 NSIndexPath\cf0 )\
+    \{\
+        \cf3 let\cf0  property = \cf5 properties\cf0 [indexPath.\cf4 row\cf0 ]\
+        \
+        \cf3 var\cf0  cell = tableView.\cf7 cellForRowAtIndexPath\cf0 (indexPath)\
+        \
+        \cf3 let\cf0  selectionColor = \cf4 UIView\cf0 () \cf3 as\cf0  \cf4 UIView\cf0 \
+        selectionColor.\cf4 layer\cf0 .\cf4 borderWidth\cf0  = \cf8 1\cf0 \
+        selectionColor.\cf4 layer\cf0 .\cf4 borderColor\cf0  = \cf4 UIColor\cf0 .\cf7 whiteColor\cf0 ().\cf4 CGColor\cf0 \
+        selectionColor.\cf4 backgroundColor\cf0  = \cf4 UIColor\cf0 .\cf7 whiteColor\cf0 ()\
+        cell!.\cf4 selectedBackgroundView\cf0  = selectionColor\
+        \
+        \
+        \
+         \cf7 dispatch_async\cf0 (\cf7 dispatch_get_main_queue\cf0 ())\
+        \{\
+            \cf3 let\cf0  unitListingController = \cf3 self\cf0 .\cf4 storyboard\cf0 ?.\cf7 instantiateViewControllerWithIdentifier\cf0 (\cf6 "UnitListing"\cf0 ) \cf3 as\cf0 ! \cf5 UnitListingController\cf0 \
+            unitListingController.\cf5 property\cf0  = property\
+            \cf3 self\cf0 .\cf7 showViewController\cf0 (unitListingController \cf3 as\cf0  \cf4 UIViewController\cf0 , sender: unitListingController )\
+        \}\
+        \
+        \
+    \}\
+    \
+    \cf3 func\cf0  tableView(tableView: \cf4 UITableView\cf0 , didUnhighlightRowAtIndexPath indexPath: \cf4 NSIndexPath\cf0 ) \{\
+        \cf3 var\cf0  cell = tableView.\cf7 cellForRowAtIndexPath\cf0 (indexPath)\
+        cell!.\cf4 contentView\cf0 .\cf4 backgroundColor\cf0  =  \cf5 utility\cf0 .\cf9 uicolorFromHex\cf0 (\cf8 0xE6E6E6\cf0 )\
+        cell!.\cf4 backgroundColor\cf0  =  \cf5 utility\cf0 .\cf9 uicolorFromHex\cf0 (\cf8 0xE6E6E6\cf0 )\
+    \}\
+    \
+    \cf3 func\cf0  tableView(tableView: \cf4 UITableView\cf0 , shouldHighlightRowAtIndexPath indexPath: \cf4 NSIndexPath\cf0 ) -> \cf4 Bool\cf0  \{\
+        \
+        \cf3 return\cf0  \cf3 true\cf0 \
+    \}\
+    \
+    \cf3 func\cf0  tableView(tableView: \cf4 UITableView\cf0 , editActionsForRowAtIndexPath indexPath: \cf4 NSIndexPath\cf0 ) -> [\cf4 AnyObject\cf0 ]?  \{\
+        \
+        \
+        \cf3 return\cf0  \cf3 nil\cf0 \
+    \}\
+    \
+    \cf3 func\cf0  resetViewColor(uiViewRef:\cf4 UIView\cf0 )\
+    \{\
+        uiViewRef.\cf4 backgroundColor\cf0  = \cf4 UIColor\cf0 .\cf7 darkGrayColor\cf0 ()\
+        uiViewRef.\cf4 alpha\cf0  = \cf8 0.97\cf0 \
+    \}\
+    \
+    \cf3 func\cf0  selectViewColor(uiViewRef:\cf4 UIView\cf0 )\
+    \{\
+        uiViewRef.\cf4 backgroundColor\cf0  = \cf5 utility\cf0 .\cf9 uicolorFromHex\cf0 (\cf8 0x000000\cf0 )\
+        uiViewRef.\cf4 alpha\cf0  = \cf8 1\cf0 \
+    \}\
+    \
+    \cf3 func\cf0  addFilter(status: \cf4 String\cf0 , uiViewRef: \cf4 UIView\cf0 )\
+    \{\
+        \cf3 for\cf0  Prop: \cf5 Property\cf0  \cf3 in\cf0  \cf5 properties\cf0 \
+        \{\
+            \cf3 if\cf0  Prop.\cf5 status\cf0  != status\
+            \{\
+                \cf5 properties\cf0 .\cf9 removeObject\cf0 (Prop)\
+            \}\
+        \}\
+        \cf9 selectViewColor\cf0 (uiViewRef)\
+    \}\
+    \
+    \cf3 func\cf0  removeFilter(status: \cf4 String\cf0 ,uiViewRef: \cf4 UIView\cf0 )\
+    \{\
+        \cf5 properties\cf0  = \cf5 allProperties\cf0 \
+        \cf9 resetViewColor\cf0 (uiViewRef)\
+    \}\
+    \
+    \cf2 //For Pending Filter remove/add fileration\
+\cf0     \cf3 func\cf0  pendingWorkFilter(uiViewRef: \cf4 UIView\cf0 )\
+    \{\
+        \cf3 if\cf0  \cf3 self\cf0 .\cf5 pendingFilterTick\cf0  == \cf3 false\cf0 \
+        \{\
+            \cf3 self\cf0 .\cf5 pendingFilterTick\cf0  = \cf3 true\cf0 \
+            \cf3 self\cf0 .\cf5 draftFilterTick\cf0  = \cf3 false\cf0 \
+            \cf3 self\cf0 .\cf5 compeletdFilterTick\cf0  = \cf3 false\cf0 \
+            \
+            \cf9 selectViewColor\cf0 (uiViewRef)\
+            \cf9 resetViewColor\cf0 (\cf5 uiCompletedView\cf0 )\
+            \cf9 resetViewColor\cf0 (\cf5 uiDraftView\cf0 )\
+            \
+            \cf9 removeFilter\cf0 (\cf5 constants\cf0 .\cf5 status\cf0 .\cf5 STATUS_PENDING_XML\cf0 ,uiViewRef: \cf5 uiPendingView\cf0 )\
+            \cf9 addFilter\cf0 (\cf5 constants\cf0 .\cf5 status\cf0 .\cf5 STATUS_PENDING_XML\cf0 ,uiViewRef: \cf5 uiPendingView\cf0 )\
+        \}\
+        \cf3 else\cf0 \
+        \{\
+            \cf3 self\cf0 .\cf5 pendingFilterTick\cf0  = \cf3 false\cf0 \
+            \cf9 removeFilter\cf0 (\cf5 constants\cf0 .\cf5 status\cf0 .\cf5 STATUS_PENDING_XML\cf0 ,uiViewRef: \cf5 uiPendingView\cf0 )\
+        \}\
+    \}\
+    \cf2 //For Draft Filter remove/add fileration\
+\cf0     \cf3 func\cf0  draftWorkFilter(uiViewRef: \cf4 UIView\cf0 )\
+    \{\
+        \cf3 if\cf0  \cf3 self\cf0 .\cf5 draftFilterTick\cf0  == \cf3 false\cf0 \
+        \{\
+            \cf3 self\cf0 .\cf5 pendingFilterTick\cf0  = \cf3 false\cf0 \
+            \cf3 self\cf0 .\cf5 draftFilterTick\cf0  = \cf3 true\cf0 \
+            \cf3 self\cf0 .\cf5 compeletdFilterTick\cf0  = \cf3 false\cf0 \
+            \
+            \cf9 selectViewColor\cf0 (uiViewRef)\
+            \cf9 resetViewColor\cf0 (\cf5 uiCompletedView\cf0 )\
+            \cf9 resetViewColor\cf0 (\cf5 uiPendingView\cf0 )\
+            \
+            \cf9 removeFilter\cf0 (\cf5 constants\cf0 .\cf5 status\cf0 .\cf5 STATUS_DRAFT_XML\cf0 ,uiViewRef: uiViewRef)\
+            \cf9 addFilter\cf0 (\cf5 constants\cf0 .\cf5 status\cf0 .\cf5 STATUS_DRAFT_XML\cf0 ,uiViewRef: uiViewRef)\
+        \}\
+        \cf3 else\cf0 \
+        \{\
+            \cf3 self\cf0 .\cf5 draftFilterTick\cf0  = \cf3 false\cf0 \
+            \cf9 removeFilter\cf0 (\cf5 constants\cf0 .\cf5 status\cf0 .\cf5 STATUS_PENDING_XML\cf0 ,uiViewRef: uiViewRef)\
+        \}\
+    \}\
+    \
+    \cf2 //For Completed Filter remove/add fileration\
+\cf0     \cf3 func\cf0  completedWorkFilter(uiViewRef: \cf4 UIView\cf0 )\
+    \{\
+        \cf3 if\cf0  \cf3 self\cf0 .\cf5 compeletdFilterTick\cf0  == \cf3 false\cf0 \
+        \{\
+            \cf3 self\cf0 .\cf5 pendingFilterTick\cf0  = \cf3 false\cf0 \
+            \cf3 self\cf0 .\cf5 draftFilterTick\cf0  = \cf3 false\cf0 \
+            \cf3 self\cf0 .\cf5 compeletdFilterTick\cf0  = \cf3 true\cf0 \
+            \
+            \cf9 selectViewColor\cf0 (uiViewRef)\
+            \cf9 resetViewColor\cf0 (\cf5 uiDraftView\cf0 )\
+            \cf9 resetViewColor\cf0 (\cf5 uiPendingView\cf0 )\
+            \
+            \cf9 removeFilter\cf0 (\cf5 constants\cf0 .\cf5 status\cf0 .\cf5 STATUS_COMPLETED_XML\cf0 ,uiViewRef: uiViewRef)\
+            \cf9 addFilter\cf0 (\cf5 constants\cf0 .\cf5 status\cf0 .\cf5 STATUS_COMPLETED_XML\cf0 ,uiViewRef: uiViewRef)\
+        \}\
+        \cf3 else\cf0 \
+        \{\
+            \cf3 self\cf0 .\cf5 compeletdFilterTick\cf0  = \cf3 false\cf0 \
+            \cf9 removeFilter\cf0 (\cf5 constants\cf0 .\cf5 status\cf0 .\cf5 STATUS_COMPLETED_XML\cf0 ,uiViewRef: uiViewRef)\
+        \}\
+    \}\
+    \
+    \cf3 func\cf0  pendingWork(sender:\cf4 UITapGestureRecognizer\cf0 )\
+    \{\
+        \cf9 pendingWorkFilter\cf0 (\cf5 uiPendingView\cf0 )\
+        \cf5 propertyListingTableView\cf0 .\cf7 reloadData\cf0 ()\
+        \cf3 self\cf0 .\cf5 propertiesMap\cf0 .\cf7 removeAnnotation\cf0 (\cf5 annotation\cf0 )\
+        \cf9 loadPropertyMap\cf0 ()\
+        \
+    \}\
+    \
+    \cf3 func\cf0  draftWork(sender:\cf4 UITapGestureRecognizer\cf0 )\
+    \{\
+        \cf9 draftWorkFilter\cf0 (\cf5 uiDraftView\cf0 )\
+        \cf5 propertyListingTableView\cf0 .\cf7 reloadData\cf0 ()\
+        \cf9 loadPropertyMap\cf0 ()\
+    \}\
+    \
+    \cf3 func\cf0  completedWork(sender:\cf4 UITapGestureRecognizer\cf0 )\
+    \{\
+        \cf9 completedWorkFilter\cf0 (\cf5 uiCompletedView\cf0 )\
+        \cf5 propertyListingTableView\cf0 .\cf7 reloadData\cf0 ()\
+        \cf9 loadPropertyMap\cf0 ()\
+    \}\
+    \
+    \cf3 func\cf0  refreshPageController(sortedProperties:[\cf5 Property\cf0 ]) \{\
+        \cf5 properties\cf0  = sortedProperties\
+        \cf5 propertyListingTableView\cf0 !.\cf7 reloadData\cf0 ()\
+    \}\
+    \
+    \cf3 func\cf0  onBackUnitListing()\{\
+        \cf9 beginParsing\cf0 ()\
+    \}\
+    \
+    \cf3 func\cf0  sortingPressed(sender: \cf4 AnyObject\cf0 )\{\
+        \
+        \cf3 var\cf0  sortingPopView = \cf5 SortingPopoverController\cf0 (nibName: \cf6 "PopView"\cf0 ,bundle: \cf3 nil\cf0  )\
+        \
+        sortingPopView.\cf5 mDelegate\cf0  = \cf3 self\cf0 \
+        sortingPopView.\cf5 properties\cf0  = \cf5 properties\cf0 \
+        sortingPopView.\cf7 setValue\cf0 (\cf5 properties\cf0 , forKey: \cf6 \'93proprties\'94\cf0 )\
+        \cf3 var\cf0  sortingPopoverController = \cf4 UIPopoverController\cf0 (contentViewController: sortingPopView)\
+        sortingPopoverController.\cf4 popoverContentSize\cf0  = \cf4 CGSize\cf0 (width: \cf8 250\cf0 , height: \cf8 90\cf0 )\
+        sortingPopoverController.\cf7 presentPopoverFromBarButtonItem\cf0 (\cf5 sortingBtn\cf0 , permittedArrowDirections: \cf4 UIPopoverArrowDirection\cf0 .Up\
+            , animated: \cf3 true\cf0 )\
+        \
+    \}\
+    \
+    \cf3 override\cf0  \cf3 func\cf0  prepareForSegue(segue: \cf4 UIStoryboardSegue\cf0 , sender: \cf4 AnyObject\cf0 ?) \{\
+        \cf3 if\cf0  segue.\cf4 identifier\cf0  == \cf6 "sorting"\cf0  \{ \cf2 // your identifier here\
+\cf0             \cf3 let\cf0  controller = segue.\cf4 destinationViewController\cf0  \cf3 as\cf0 ! \cf5 SortingPopoverController\cf0 \
+            controller.\cf5 mDelegate\cf0  = \cf3 self\cf0 \
+        \}\
+    \}\
+    \
+    \
+\}}
